@@ -1,4 +1,6 @@
 from graph_builder import GraphBuilder
+from graph_visualizer import GraphVisualizer
+import matplotlib.pyplot as plt
 
 NODE_COLUMNS = {"id", "name", "type", "layer", "purdue", "equipment", "unit",
                 "normal_min", "normal_max", "fail_position"}
@@ -13,4 +15,9 @@ builder = GraphBuilder("data/nodes.csv", "data/edges.csv", NODE_COLUMNS, EDGE_CO
 
 G = builder.build()
 
-builder.print_summary()
+# builder.print_summary()
+
+visualizer = GraphVisualizer(G)
+fig = visualizer.draw()
+fig.canvas.manager.window.state('zoomed')
+plt.show()
