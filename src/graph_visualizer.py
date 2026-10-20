@@ -4,6 +4,7 @@ import networkx as nx
 
 
 COLORS = {"equipment": "#2a78d6", "utility": "#2a78d6", "sensor": "#eb6834", "actuator": "#eb6834"}
+NODE_SIZE = 1400
 
 class GraphVisualizer:
 
@@ -11,31 +12,53 @@ class GraphVisualizer:
         self.G = G
 
     def layout(self):
-        pass
+        level_zero_rows = {"equipment": 0, "utility": 0, "actuator": 1, "sensor": 2}
+        rows = {}
+
+        for node, data in self.G.nodes(data=True):
+            if data['layer'] == 0:
+                row = level_zero_rows[data['type']]
+            else: 
+                row = data['layer'] + 2
+            rows.setdefault(row, []).append(node)
+
+        rows[1].sort(key=lambda node: rows[0].index(self.G.nodes[node]['equipment']))
+        rows[2].sort(key=lambda node: rows[0].index(self.G.nodes[node]['equipment']))
+
+        pos = {}
+        for row, nodes in rows.items():
+            for i, node in enumerate(nodes):
+                x = (i + 0.5) * 30 / len(nodes)
+                pos[node] = (x, row)
+        return pos
+        
 
     def draw(self):
         # Define area to draw
         fig, ax = plt.subplots(figsize=(20, 10))
-        pos = nx.spring_layout(self.G, seed=1)
+        pos = self.layout()
 
         # Give each node type a color and draw
         colors = []
         for _, t in self.G.nodes(data='type'):
             colors.append(COLORS.get(t, '#1baf7a'))
-        nx.draw_networkx_nodes(self.G, pos, ax=ax, node_size=200, node_color=colors)
+        nx.draw_networkx_nodes(self.G, pos, ax=ax, node_size=NODE_SIZE, node_color=colors)
 
         # Define edge lists and draw
-        network, others = [], []
+        network, network_colors, others, others_colors = [], [], [], []
         for source, target, rel in self.G.edges(data='rel'):
             if rel == 'network':
                 network.append((source, target))
+                network_colors.append(COLORS.get(self.G.nodes[source]['type'], '#1baf7a'))
             else:
                 others.append((source, target))
+                others_colors.append(COLORS.get(self.G.nodes[source]['type'], '#1baf7a'))
 
-        nx.draw_networkx_edges(self.G, pos, edgelist=network, ax=ax, node_size=200, edge_color='gray')
-        nx.draw_networkx_edges(self.G, pos, edgelist=others, ax=ax, node_size=200, edge_color='gray', style='dashed')
+        nx.draw_networkx_edges(self.G, pos, edgelist=network, ax=ax, node_size=NODE_SIZE, arrowsize=15, edge_color=network_colors)
+        nx.draw_networkx_edges(self.G, pos, edgelist=others, ax=ax, node_size=NODE_SIZE, arrowsize=15, edge_color=others_colors, style='dashed')
 
-        nx.draw_networkx_labels(self.G, pos, ax=ax, font_size=8)
+        labels = {n: n.replace('_', '\n') for n in self.G.nodes}
+        nx.draw_networkx_labels(self.G, pos, ax=ax, font_size=7, font_color='black', labels=labels)
 
         legend = [
             Line2D([], [], marker='o', color='none', markerfacecolor='#2a78d6', markersize=10, label='Equipment'),
