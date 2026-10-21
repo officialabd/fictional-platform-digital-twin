@@ -1,7 +1,7 @@
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import networkx as nx
-
+import plotly.graph_objects as go
 
 COLORS = {"equipment": "#2a78d6", "utility": "#2a78d6", "sensor": "#eb6834", "actuator": "#eb6834"}
 NODE_SIZE = 1400
@@ -70,6 +70,50 @@ class GraphVisualizer:
         ax.set_title('Platform asset graph')
         ax.axis('off')
         fig.tight_layout()
+        return fig
+
+    def interactive_draw(self):
+        pos = self.layout()
+
+        edge_x = []
+        edge_y = []
+        for source, target in self.G.edges():
+            x0, y0 = pos[source]
+            x1, y1 = pos[target]
+            edge_x.extend([x0, x1, None])
+            edge_y.extend([y0, y1, None])
+
+        node_x = []
+        node_y = []
+        for node in self.G.nodes():
+            x, y = pos[node]
+            node_x.append(x)
+            node_y.append(y)
+
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(
+                x=edge_x,
+                y=edge_y,
+                mode="lines",
+                line=dict(width=1, color="gray"),
+                hoverinfo="none",
+            )
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=node_x,
+                y=node_y,
+                mode="markers+text",
+                text=list(self.G.nodes()),
+                textposition="top center",
+                marker=dict(size=18, color="royalblue"),
+            )
+        )
+
+        fig.update_layout(title="Basic NetworkX Graph", showlegend=False)
         return fig
 
     def save(self):
