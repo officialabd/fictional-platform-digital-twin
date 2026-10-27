@@ -1,0 +1,126 @@
+source,target,rel,reason
+Manifold,Separator,flows_to,Well fluid enters the separator through the choke
+Separator,Scrubber,flows_to,Gas leaves the top of the separator
+Separator,Export_Pumps,flows_to,Oil leaves the middle of the separator
+Separator,Water_Treatment,flows_to,Water leaves the bottom of the separator
+Separator,Flare,flows_to,Blowdown and upset gas go to the flare
+Scrubber,Compressor,flows_to,Dry gas goes to compressor suction
+Manifold,PT101,measured_by,Pressure of incoming well fluid
+Manifold,TT101,measured_by,Temperature of incoming well fluid
+Manifold,FT101,measured_by,Total inflow from the wells
+Separator,PT201,measured_by,Separator pressure
+Separator,TT201,measured_by,Separator temperature
+Separator,LT201,measured_by,Oil level
+Separator,LT202,measured_by,Oil and water interface level
+Separator,LSHH201,measured_by,Independent high high level switch
+Separator,FT201,measured_by,Gas outflow
+Separator,FT202,measured_by,Oil outflow
+Separator,FT203,measured_by,Water outflow
+Separator,GD801,measured_by,Gas leak detection around the separator
+Separator,FD801,measured_by,Fire detection in the process area
+Scrubber,LT301,measured_by,Liquid collected in the scrubber
+Compressor,PT401,measured_by,Suction pressure
+Compressor,PT402,measured_by,Discharge pressure
+Compressor,TT401,measured_by,Discharge temperature
+Compressor,FT401,measured_by,Flow through the compressor
+Compressor,VT401,measured_by,Machine vibration
+Compressor,JT401,measured_by,Motor power
+Compressor,GD802,measured_by,Gas leak detection around the compressor
+Export_Pumps,PT501,measured_by,Pump discharge pressure
+Export_Pumps,FT501,measured_by,Fiscal export flow
+Export_Pumps,VT501,measured_by,Pump vibration
+Water_Treatment,AT601,measured_by,Oil left in discharged water
+Water_Treatment,FT601,measured_by,Water discharged overboard
+Flare,FT701,measured_by,Gas burned at the flare
+Power_Gen,JT901,measured_by,Generator power output
+Instrument_Air,PT901,measured_by,Instrument air header pressure
+PT101,DCS_Separation,reads,Manifold area belongs to DCS_Separation
+TT101,DCS_Separation,reads,Manifold area belongs to DCS_Separation
+FT101,DCS_Separation,reads,Inflow used for monitoring and mass balance
+PT201,DCS_Separation,reads,Input to the separator pressure loop
+PT201,SIS,reads,Shared with DCS: deliberate weakness for pressure trip
+TT201,DCS_Separation,reads,Separator monitoring
+LT201,DCS_Separation,reads,Input to the oil level loop
+LT202,DCS_Separation,reads,Input to the interface level loop
+LSHH201,SIS,reads,SIS only: overfill trip
+FT201,DCS_Separation,reads,Separator monitoring and mass balance
+FT202,DCS_Separation,reads,Separator monitoring and mass balance
+FT203,DCS_Separation,reads,Separator monitoring and mass balance
+LT301,SIS,reads,SIS only: scrubber high high level trips the compressor
+PT401,DCS_Compression,reads,Anti surge input
+PT402,DCS_Compression,reads,Anti surge input
+TT401,DCS_Compression,reads,Compressor monitoring
+FT401,DCS_Compression,reads,Anti surge input
+VT401,DCS_Compression,reads,Compressor health monitoring
+JT401,DCS_Compression,reads,Compressor load monitoring
+FT701,DCS_Compression,reads,Flare area belongs to DCS_Compression
+PT501,DCS_Export,reads,Input to the export pump speed loop
+FT501,DCS_Export,reads,Fiscal metering
+VT501,DCS_Export,reads,Pump health monitoring
+AT601,DCS_Separation,reads,Water treatment belongs to DCS_Separation
+FT601,DCS_Separation,reads,Water treatment belongs to DCS_Separation
+GD801,SIS,reads,Gas detection trips full shutdown
+GD802,SIS,reads,Gas detection trips full shutdown
+FD801,SIS,reads,Fire detection trips full shutdown
+JT901,DCS_Export,reads,Utilities belong to DCS_Export
+PT901,DCS_Export,reads,Utilities belong to DCS_Export
+DCS_Separation,HV101,commands,Executes the operator choke setpoint from the HMI
+DCS_Separation,PV201,commands,Separator pressure loop
+DCS_Separation,LV201,commands,Oil level loop
+DCS_Separation,LV202,commands,Interface level loop
+DCS_Compression,FV401,commands,Anti surge loop
+DCS_Export,P501,commands,Export pump discharge pressure loop
+SIS,SDV101,commands,Closes the inlet on a trip
+SIS,BDV201,commands,Opens blowdown to flare on a trip
+SIS,Compressor,trips,Stops the compressor on scrubber level or gas or fire
+SIS,Export_Pumps,trips,Stops the pumps on gas or fire
+HV101,Manifold,acts_on,Sets how much well fluid enters
+SDV101,Manifold,acts_on,Shuts off all inflow
+PV201,Separator,acts_on,Controls separator pressure through gas outflow
+LV201,Separator,acts_on,Controls oil level through oil outflow
+LV202,Separator,acts_on,Controls interface level through water outflow
+BDV201,Separator,acts_on,Depressurizes the separator to the flare
+FV401,Compressor,acts_on,Recycles gas to prevent surge
+P501,Export_Pumps,acts_on,Sets export pump speed
+Power_Gen,Compressor,supplies,Electric motor driven compressor
+Power_Gen,P501,supplies,Speed drive stops on power loss
+Power_Gen,Instrument_Air,supplies,Air compressors are electric
+Scrubber,Power_Gen,supplies,Fuel gas for the gas turbine generators
+Instrument_Air,SDV101,supplies,Pneumatic valve: fails closed on air loss
+Instrument_Air,PV201,supplies,Pneumatic valve: fails open on air loss
+Instrument_Air,LV201,supplies,Pneumatic valve: fails closed on air loss
+Instrument_Air,LV202,supplies,Pneumatic valve: fails closed on air loss
+Instrument_Air,BDV201,supplies,Pneumatic valve: fails open on air loss
+Instrument_Air,FV401,supplies,Pneumatic valve: fails open on air loss
+DCS_Separation,SCADA_Server,network,Sends readings up to SCADA
+SCADA_Server,DCS_Separation,network,Sends operator commands down
+DCS_Compression,SCADA_Server,network,Sends readings up to SCADA
+SCADA_Server,DCS_Compression,network,Sends operator commands down
+DCS_Export,SCADA_Server,network,Sends readings up to SCADA
+SCADA_Server,DCS_Export,network,Sends operator commands down
+SIS,SCADA_Server,network,SIS status is read only from SCADA
+SCADA_Server,HMI,network,Displays values and alarms
+HMI,SCADA_Server,network,Sends operator commands
+EWS,SCADA_Server,network,Shared Level 2 network
+SCADA_Server,EWS,network,Shared Level 2 network
+EWS,DCS_Separation,network,Programs controller logic
+EWS,DCS_Compression,network,Programs controller logic
+EWS,DCS_Export,network,Programs controller logic
+EWS,SIS,network,Programs SIS logic (Triton style path)
+SCADA_Server,Historian,network,Readings stored in the historian
+Historian,SCADA_Server,network,Historian polls SCADA (classic IT to OT path)
+Historian,IT_OT_Firewall,network,Historian data leaves through the DMZ
+IT_OT_Firewall,Historian,network,Allowed return traffic
+IT_OT_Firewall,Satellite_Link,network,DMZ to shore link
+Satellite_Link,IT_OT_Firewall,network,Shore to DMZ link
+IT_OT_Firewall,EWS,network,Vendor remote access reaches the EWS through the DMZ
+EWS,IT_OT_Firewall,network,Remote session return traffic
+Satellite_Link,Digital_Twin,network,One way by design: the twin never sends commands
+Corporate_IT,Satellite_Link,network,Business traffic and billing data to and from the platform
+Satellite_Link,Corporate_IT,network,Business traffic and billing data to and from the platform
+Corporate_IT,Digital_Twin,network,Users view the dashboard (filtered by twin zone rules)
+Digital_Twin,Corporate_IT,network,Dashboard served to corporate users
+Vendor_Gateway,Satellite_Link,network,Vendor sessions travel over the satellite link
+Satellite_Link,Vendor_Gateway,network,Vendor session return traffic
+Corporate_IT,Vendor_Gateway,network,Gateway sits on the corporate network
+Vendor_Gateway,Corporate_IT,network,Gateway sits on the corporate network
