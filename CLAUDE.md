@@ -14,6 +14,10 @@ Simulator (plays Purdue Levels 0 to 3), 1 second tick:
 3. Sensors: true state + noise = reported value. Each sensor keeps a true and a reported value.
 4. Fault injector: spoofed reading, stuck valve, controller offline, link down.
 Output: tag, timestamp, reported value. True values go to a separate truth log, used only in Week 10 validation.
+
+Transport (decided): MQTT via a Mosquitto broker, paho-mqtt 2.x.
+- The simulator stores every reading in its historian (sim.db), then publishes. A forwarded marker moves only on broker PUBACK (QoS 1). Link down = stop publishing; on recovery, resend everything past the marker with original timestamps.
+- Topic per tag: platform/<TAG>. Payload: JSON {tag, ts, value}. ts is simulated seconds. A resend can duplicate, so the twin must ignore duplicates.
 Keep on purpose: PT201 feeds both DCS and SIS (Week 7 spoofing scenario). Instrument air below 4.5 barg sends every pneumatic valve to its fail position.
 
 Twin, six parts: data sync, graph model (exists), monitoring, impact analysis, dashboard (Streamlit), advisor (LLM).
@@ -27,27 +31,24 @@ Twin, six parts: data sync, graph model (exists), monitoring, impact analysis, d
 - Synthetic data only. No company material in the repo. Secrets in .env, which is gitignored.
 
 # Current state
-Branch phase-1-building-nodes-network:
-- data/nodes.csv: 59 assets. data/edges.csv: 125 typed relationships (flows_to, measured_by, reads, commands, acts_on, trips, network and others).
-- src/graph_builder.py, src/graph_visualizer.py (save() is a stub; interactive_draw is a first pass).
-- src/load_neo4j.py (uncommitted). src/main.py (modified; loads Neo4j on every run, so the Neo4j server must be running).
-All existing code is the twin's graph model. NetworkX is the source of truth; Neo4j is optional.
+Branch phase-2-simulator:
+- src/simulator: config, process, sensors, control, faults, scenarios, plant, storage, forwarder, mqtt_link, main. Run: python -m simulator.main (needs pip install -e .). Details in README.md and docs/simulator_parameters.md.
+- src/shared/messages.py: reading format and topic. The decoder and subscription topic get added with the twin's data sync.
+- src/twin: the graph model only. Run from repo root: python -m twin.main (needs the Neo4j server).
+- data/nodes.csv: 59 assets. data/edges.csv: 125 typed relationships. NetworkX is the source of truth; Neo4j is optional.
 
 # Target layout
 data/, src/simulator/, src/twin/ (existing code moves here), src/shared/, runs/ (gitignored output), tests/, docs/
 
 # Open questions
-1. Transport from simulator to twin: function call, file or SQLite, or MQTT. Blocks the simulator's output step.
-2. Impact rule per edge type: which way damage spreads (arrows follow meaning, not damage).
-3. Impacts outside the graph, e.g. precautionary shutdown after loss of visibility.
-4. Which LLM for the advisor, and whether an external API is acceptable.
-5. How much history the twin stores.
+1. Impact rule per edge type: which way damage spreads (arrows follow meaning, not damage).
+2. Impacts outside the graph, e.g. precautionary shutdown after loss of visibility.
+3. Which LLM for the advisor, and whether an external API is acceptable.
+4. How much history the twin stores.
 
 # Next steps
-1. Confirm .env is in .gitignore, commit the Neo4j work, merge phase-1 into main.
-2. Create branch phase-2-simulator.
-3. git mv the existing code into src/twin/ as its own commit.
-4. Build the process model and DCS/SIS first. Build the output step after the transport decision.
+1. Twin data sync: subscribe to the broker, ignore duplicates, keep latest value, timestamp and quality.
+2. Week 6: impact analysis and mid-term demo.
 
 # How to work with me
 - Concise, direct, no fluff. No em dashes.
