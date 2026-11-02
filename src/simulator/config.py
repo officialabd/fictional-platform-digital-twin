@@ -1,7 +1,8 @@
 """Simulator settings. The reasoning behind the numbers is in docs/simulator_parameters.md.
 
-The simulator owns these values and never reads data/nodes.csv. Tag names are the only thing it
-has in common with the twin. Units are part of each name: barg is gauge pressure, bara absolute.
+The simulator owns these values and never reads the graph's data files. Tag names are the only
+thing it has in common with the twin. Units are part of each name: barg is gauge pressure, bara
+absolute.
 """
 
 from dataclasses import dataclass
