@@ -9,7 +9,7 @@ from simulator.config import SisAction
 
 
 class PIController:
-    """PI in velocity form: each tick nudges the output, so saturation cannot wind up the integral."""
+    """Velocity form PI: each tick nudges the output, so saturation cannot wind up the integral."""
 
     def __init__(self, loop: config.Loop) -> None:
         self.kp = loop.kp
