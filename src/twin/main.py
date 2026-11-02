@@ -1,6 +1,6 @@
-from graph_builder import GraphBuilder
-from graph_visualizer import GraphVisualizer
-from load_neo4j import Neo4jLoader
+from twin.graph_builder import GraphBuilder
+from twin.graph_visualizer import GraphVisualizer
+from twin.load_neo4j import Neo4jLoader
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 
