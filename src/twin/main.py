@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 NODE_COLUMNS = {"id", "name", "type", "layer", "purdue", "equipment", "unit",
-                "normal_min", "normal_max", "fail_position"}
+                "normal_min", "normal_max", "fail_position", "description"}
 EDGE_COLUMNS = {"source", "target", "rel", "reason"}
 
 PHYSICAL = {"equipment", "utility"}
@@ -22,11 +22,9 @@ G = builder.build()
 # builder.print_summary()
 
 visualizer = GraphVisualizer(G)
-fig = visualizer.interactive_draw()
-# fig.canvas.manager.window.state('zoomed')
-# fig.show()
+visualizer.show_interactive()  # writes runs/asset_graph.html and opens it in the browser
 
 
-with Neo4jLoader() as loader:
-    loader.load(G)
-    loader.compare_counts(G)
+# with Neo4jLoader() as loader:
+#     loader.load(G)
+#     loader.compare_counts(G)

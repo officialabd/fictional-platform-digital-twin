@@ -1,60 +1,60 @@
-id,name,type,layer,purdue,equipment,unit,normal_min,normal_max,fail_position
-Manifold,Production manifold,equipment,0,0,,,,,
-Separator,Three phase separator,equipment,0,0,,,,,
-Scrubber,Gas scrubber,equipment,0,0,,,,,
-Compressor,Gas compressor,equipment,0,0,,,,,
-Export_Pumps,Oil export pumps,equipment,0,0,,,,,
-Water_Treatment,Produced water treatment,equipment,0,0,,,,,
-Flare,Flare,equipment,0,0,,,,,
-Power_Gen,Power generation,utility,0,0,,,,,
-Instrument_Air,Instrument air,utility,0,0,,,,,
-PT101,Manifold pressure,sensor,0,0,Manifold,barg,40,50,
-TT101,Manifold temperature,sensor,0,0,Manifold,degC,60,70,
-FT101,Well inflow,sensor,0,0,Manifold,m3/h,85,95,
-PT201,Separator pressure,sensor,0,0,Separator,barg,18,22,
-TT201,Separator temperature,sensor,0,0,Separator,degC,55,65,
-LT201,Oil level,sensor,0,0,Separator,%,40,60,
-LT202,Interface level,sensor,0,0,Separator,%,25,40,
-LSHH201,High high level switch,sensor,0,0,Separator,on/off,0,0,
-FT201,Gas outflow,sensor,0,0,Separator,Sm3/h,18000,22000,
-FT202,Oil outflow,sensor,0,0,Separator,m3/h,55,65,
-FT203,Water outflow,sensor,0,0,Separator,m3/h,25,35,
-LT301,Scrubber level,sensor,0,0,Scrubber,%,10,30,
-PT401,Compressor suction pressure,sensor,0,0,Compressor,barg,17,21,
-PT402,Compressor discharge pressure,sensor,0,0,Compressor,barg,65,75,
-TT401,Compressor discharge temperature,sensor,0,0,Compressor,degC,110,130,
-FT401,Compressor flow,sensor,0,0,Compressor,Sm3/h,20000,24000,
-VT401,Compressor vibration,sensor,0,0,Compressor,mm/s,1,4,
-JT401,Compressor motor power,sensor,0,0,Compressor,MW,3.5,4.5,
-PT501,Export pump discharge pressure,sensor,0,0,Export_Pumps,barg,55,65,
-FT501,Oil export flow (fiscal meter),sensor,0,0,Export_Pumps,m3/h,55,65,
-VT501,Export pump vibration,sensor,0,0,Export_Pumps,mm/s,1,3,
-AT601,Oil in water,sensor,0,0,Water_Treatment,mg/L,5,25,
-FT601,Overboard water flow,sensor,0,0,Water_Treatment,m3/h,25,35,
-FT701,Flare flow,sensor,0,0,Flare,Sm3/h,50,150,
-GD801,Gas detector separator area,sensor,0,0,Separator,%LEL,0,5,
-GD802,Gas detector compressor area,sensor,0,0,Compressor,%LEL,0,5,
-FD801,Flame detector,sensor,0,0,Separator,on/off,0,0,
-JT901,Generator power output,sensor,0,0,Power_Gen,MW,6,9,
-PT901,Instrument air pressure,sensor,0,0,Instrument_Air,barg,7,8,
-HV101,Production choke,actuator,0,0,Manifold,%,,,stays
-SDV101,Inlet shutdown valve,actuator,0,0,Manifold,%,,,closed
-PV201,Gas outlet pressure valve,actuator,0,0,Separator,%,,,open
-LV201,Oil outlet level valve,actuator,0,0,Separator,%,,,closed
-LV202,Water outlet level valve,actuator,0,0,Separator,%,,,closed
-BDV201,Blowdown valve,actuator,0,0,Separator,%,,,open
-FV401,Anti surge valve,actuator,0,0,Compressor,%,,,open
-P501,Export pump speed drive,actuator,0,0,Export_Pumps,%,,,stops
-DCS_Separation,DCS separation area,controller,1,1,,,,,
-DCS_Compression,DCS compression area,controller,1,1,,,,,
-DCS_Export,DCS export and utilities area,controller,1,1,,,,,
-SIS,Safety instrumented system,safety_system,1,1,,,,,
-SCADA_Server,SCADA server,supervisory,2,2,,,,,
-HMI,Operator stations (HMI),supervisory,2,2,,,,,
-EWS,Engineering workstation,supervisory,2,2,,,,,
-Historian,Platform historian,site_operations,3,3,,,,,
-IT_OT_Firewall,IT/OT firewall (DMZ),dmz,4,3.5,,,,,
-Satellite_Link,Satellite link,wan,5,WAN,,,,,
-Digital_Twin,Digital twin and dashboard,onshore,6,Onshore,,,,,
-Corporate_IT,Corporate IT,enterprise,7,4-5,,,,,
-Vendor_Gateway,Vendor remote access gateway,enterprise,7,4-5,,,,,
+id,name,type,layer,purdue,equipment,unit,normal_min,normal_max,fail_position,description
+Manifold,Production manifold,equipment,0,0,,,,,,Collects well fluid from the wells and feeds it to the separator.
+Separator,Three phase separator,equipment,0,0,,,,,,"Splits well fluid into gas, oil and water streams."
+Scrubber,Gas scrubber,equipment,0,0,,,,,,Removes liquid droplets from the gas before compression.
+Compressor,Gas compressor,equipment,0,0,,,,,,Raises gas pressure for export and supplies fuel gas downstream.
+Export_Pumps,Oil export pumps,equipment,0,0,,,,,,Pump the separated oil into the export pipeline.
+Water_Treatment,Produced water treatment,equipment,0,0,,,,,,Cleans produced water before it is discharged overboard.
+Flare,Flare,equipment,0,0,,,,,,Safely burns gas released during blowdown and upsets.
+Power_Gen,Power generation,utility,0,0,,,,,,Gas turbine generators that supply electric power to the platform.
+Instrument_Air,Instrument air,utility,0,0,,,,,,Supplies compressed air that drives the pneumatic valves.
+PT101,Manifold pressure,sensor,0,0,Manifold,barg,40,50,,Measures the pressure of well fluid arriving at the manifold.
+TT101,Manifold temperature,sensor,0,0,Manifold,degC,60,70,,Measures the temperature of well fluid arriving at the manifold.
+FT101,Well inflow,sensor,0,0,Manifold,m3/h,85,95,,Measures total fluid inflow from the wells.
+PT201,Separator pressure,sensor,0,0,Separator,barg,18,22,,Measures separator pressure; shared by the DCS pressure loop and the SIS.
+TT201,Separator temperature,sensor,0,0,Separator,degC,55,65,,Measures separator temperature.
+LT201,Oil level,sensor,0,0,Separator,%,40,60,,Measures the oil level in the separator for the oil level loop.
+LT202,Interface level,sensor,0,0,Separator,%,25,40,,Measures the oil and water interface level for the interface loop.
+LSHH201,High high level switch,sensor,0,0,Separator,on/off,0,0,,Independent switch that tells the SIS the separator is about to overfill.
+FT201,Gas outflow,sensor,0,0,Separator,Sm3/h,18000,22000,,Measures gas flow leaving the separator.
+FT202,Oil outflow,sensor,0,0,Separator,m3/h,55,65,,Measures oil flow leaving the separator.
+FT203,Water outflow,sensor,0,0,Separator,m3/h,25,35,,Measures water flow leaving the separator.
+LT301,Scrubber level,sensor,0,0,Scrubber,%,10,30,,Measures liquid level in the scrubber; high high level trips the compressor.
+PT401,Compressor suction pressure,sensor,0,0,Compressor,barg,17,21,,Measures compressor suction pressure for anti surge control.
+PT402,Compressor discharge pressure,sensor,0,0,Compressor,barg,65,75,,Measures compressor discharge pressure for anti surge control.
+TT401,Compressor discharge temperature,sensor,0,0,Compressor,degC,110,130,,Measures compressor discharge temperature.
+FT401,Compressor flow,sensor,0,0,Compressor,Sm3/h,20000,24000,,Measures gas flow through the compressor for anti surge control.
+VT401,Compressor vibration,sensor,0,0,Compressor,mm/s,1,4,,Measures compressor vibration to track machine health.
+JT401,Compressor motor power,sensor,0,0,Compressor,MW,3.5,4.5,,Measures the electric power drawn by the compressor motor.
+PT501,Export pump discharge pressure,sensor,0,0,Export_Pumps,barg,55,65,,Measures export pump discharge pressure for the pump speed loop.
+FT501,Oil export flow (fiscal meter),sensor,0,0,Export_Pumps,m3/h,55,65,,Fiscal meter that measures oil export flow.
+VT501,Export pump vibration,sensor,0,0,Export_Pumps,mm/s,1,3,,Measures export pump vibration to track machine health.
+AT601,Oil in water,sensor,0,0,Water_Treatment,mg/L,5,25,,Measures oil left in the water before discharge.
+FT601,Overboard water flow,sensor,0,0,Water_Treatment,m3/h,25,35,,Measures water flow discharged overboard.
+FT701,Flare flow,sensor,0,0,Flare,Sm3/h,50,150,,Measures gas flow burned at the flare.
+GD801,Gas detector separator area,sensor,0,0,Separator,%LEL,0,5,,Detects gas leaks around the separator; triggers full shutdown.
+GD802,Gas detector compressor area,sensor,0,0,Compressor,%LEL,0,5,,Detects gas leaks around the compressor; triggers full shutdown.
+FD801,Flame detector,sensor,0,0,Separator,on/off,0,0,,Detects fire in the process area; triggers full shutdown.
+JT901,Generator power output,sensor,0,0,Power_Gen,MW,6,9,,Measures generator power output.
+PT901,Instrument air pressure,sensor,0,0,Instrument_Air,barg,7,8,,Measures instrument air header pressure.
+HV101,Production choke,actuator,0,0,Manifold,%,,,stays,Choke valve that sets how much well fluid enters the platform.
+SDV101,Inlet shutdown valve,actuator,0,0,Manifold,%,,,closed,Shutdown valve that closes the inlet when the SIS trips.
+PV201,Gas outlet pressure valve,actuator,0,0,Separator,%,,,open,Controls separator pressure by adjusting gas outflow.
+LV201,Oil outlet level valve,actuator,0,0,Separator,%,,,closed,Controls separator oil level by adjusting oil outflow.
+LV202,Water outlet level valve,actuator,0,0,Separator,%,,,closed,Controls separator interface level by adjusting water outflow.
+BDV201,Blowdown valve,actuator,0,0,Separator,%,,,open,Opens on a trip to depressurize the separator to the flare.
+FV401,Anti surge valve,actuator,0,0,Compressor,%,,,open,Recycles gas around the compressor to prevent surge.
+P501,Export pump speed drive,actuator,0,0,Export_Pumps,%,,,stops,Variable speed drive that sets export pump speed.
+DCS_Separation,DCS separation area,controller,1,1,,,,,,"Controller running the manifold, separator and water treatment loops."
+DCS_Compression,DCS compression area,controller,1,1,,,,,,Controller running the compressor anti surge loop and flare monitoring.
+DCS_Export,DCS export and utilities area,controller,1,1,,,,,,Controller running the export pump loop and utilities monitoring.
+SIS,Safety instrumented system,safety_system,1,1,,,,,,Independent safety system that trips the plant to a safe state.
+SCADA_Server,SCADA server,supervisory,2,2,,,,,,Collects data from the controllers and serves it to operators.
+HMI,Operator stations (HMI),supervisory,2,2,,,,,,Operator screens used to monitor the plant and change setpoints.
+EWS,Engineering workstation,supervisory,2,2,,,,,,Workstation used by engineers to program controllers and the SIS.
+Historian,Platform historian,site_operations,3,3,,,,,,Stores process data history for the platform.
+IT_OT_Firewall,IT/OT firewall (DMZ),dmz,4,3.5,,,,,,Firewall and DMZ separating the control network from outside networks.
+Satellite_Link,Satellite link,wan,5,WAN,,,,,,Communication link between the platform and onshore.
+Digital_Twin,Digital twin and dashboard,onshore,6,Onshore,,,,,,Onshore twin and dashboard that monitors the platform.
+Corporate_IT,Corporate IT,enterprise,7,4-5,,,,,,Company business network onshore.
+Vendor_Gateway,Vendor remote access gateway,enterprise,7,4-5,,,,,,Remote access entry point for equipment vendors.
