@@ -1,10 +1,12 @@
 // Click behavior for the asset graph page. GraphVisualizer prepends `const META = {...}`.
-// Traces 0..N-1 are edges (same order as META.edges), trace N is the node trace.
+// Traces 0..N-1 are the drawn edges (same order as META.edges), then one invisible
+// hover trace per edge type (meta "edge-hover", name = rel), then the node trace last.
 (function () {
   const gd = document.getElementById('{plot_id}');
   const edges = META.edges;
-  const nodeTrace = edges.length;
+  const nodeTrace = gd.data.length - 1;
   const edgeTraces = edges.map((_, i) => i);
+  const hoverTraces = gd.data.map((t, i) => t.meta === 'edge-hover' ? i : -1).filter(i => i >= 0);
   const nodeIds = gd.data[nodeTrace].customdata;
   const C = META.colors;
 
@@ -60,6 +62,7 @@
   function applyFilter() {
     const shown = new Set(boxes.filter(b => b.checked).map(b => b.value));
     Plotly.restyle(gd, {visible: edges.map(e => shown.has(e[2]))}, edgeTraces);
+    Plotly.restyle(gd, {visible: hoverTraces.map(i => shown.has(gd.data[i].name))}, hoverTraces);
   }
   boxes.forEach(b => b.addEventListener('change', applyFilter));
   filters.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {

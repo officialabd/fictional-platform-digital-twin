@@ -22,6 +22,7 @@ IN_COLOR = "#7b3fe4"    # edges coming into the selected node
 OUT_COLOR = "#e0218a"   # edges leaving the selected node
 CURVE_POINTS = 21       # odd, so the arrow sits on the exact middle point
 ARROW_SIZE = 12
+NODE_HOVER_RADIUS = 22  # pixels around a node where edges give up hover and clicks
 # Rough pixels per data unit. Only used to make curves bend evenly on screen.
 PX_X, PX_Y = 50, 85
 
@@ -156,8 +157,10 @@ class GraphVisualizer:
 
         # One trace per edge so the click script can recolor each edge on its own.
         # The arrow marker sits in the middle and points along the curve.
+        # These traces never take hover or clicks; the hover traces below do that.
         arrow_sizes = [0] * CURVE_POINTS
         arrow_sizes[CURVE_POINTS // 2] = ARROW_SIZE
+        hover_points = {}  # rel -> (xs, ys, texts)
         for source, target, data in self.G.edges(data=True):
             xs, ys = self.curve(pos[source], pos[target])
             fig.add_trace(go.Scatter(
@@ -166,8 +169,28 @@ class GraphVisualizer:
                 line=dict(width=1, color=EDGE_COLOR),
                 marker=dict(symbol="arrow", size=arrow_sizes, angleref="previous",
                             color=EDGE_COLOR),
-                hovertemplate=(f"{source} → {target}<br>{data['rel']}: {data['reason']}"
-                               "<extra></extra>"),
+                hoverinfo="skip",
+            ))
+            # Keep only the curve points that are clear of every node, so that
+            # near a node the node is the only thing that can be hovered or clicked
+            text = f"{source} → {target}<br>{data['rel']}: {data['reason']}"
+            color = COLORS.get(self.G.nodes[source]['type'], CYBER_COLOR)  # tooltip = source color
+            hx, hy, ht, hc = hover_points.setdefault(data['rel'], ([], [], [], []))
+            for x, y in zip(xs, ys, strict=True):
+                if all(((x - px) * PX_X) ** 2 + ((y - py) * PX_Y) ** 2 > NODE_HOVER_RADIUS ** 2
+                       for px, py in pos.values()):
+                    hx.append(x)
+                    hy.append(y)
+                    ht.append(text)
+                    hc.append(color)
+
+        # Invisible hover points, one trace per edge type so the filter can hide them
+        for rel, (hx, hy, ht, hc) in sorted(hover_points.items()):
+            fig.add_trace(go.Scatter(
+                x=hx, y=hy, mode="markers", name=rel, meta="edge-hover",
+                marker=dict(size=6, opacity=0),
+                hovertext=ht, hovertemplate="%{hovertext}<extra></extra>",
+                hoverlabel=dict(bgcolor=hc, bordercolor="white", font=dict(color="white")),
             ))
 
         # Nodes go last so they draw on top of the edges
