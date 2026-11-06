@@ -7,6 +7,8 @@ import networkx as nx
 import plotly.graph_objects as go
 from matplotlib.lines import Line2D
 
+from twin.edge_router import route_edges
+
 COLORS = {"equipment": "#2a78d6", "utility": "#2a78d6", "sensor": "#eb6834", "actuator": "#eb6834"}
 CYBER_COLOR = "#1baf7a"
 NODE_SIZE = 1400
@@ -20,11 +22,12 @@ EDGE_COLOR = "#8a9099"
 EDGE_FADED = "rgba(154, 160, 166, 0.12)"
 IN_COLOR = "#7b3fe4"    # edges coming into the selected node
 OUT_COLOR = "#e0218a"   # edges leaving the selected node
-CURVE_POINTS = 21       # odd, so the arrow sits on the exact middle point
 ARROW_SIZE = 12
 NODE_HOVER_RADIUS = 22  # pixels around a node where edges give up hover and clicks
-# Rough pixels per data unit. Only used to make curves bend evenly on screen.
-PX_X, PX_Y = 50, 85
+# Assumed pixels per x unit (about 1500 px of plot width on a 1920 px screen).
+# The router uses it to space ports, lanes and hover points. y is in real pixels.
+PX_X = 50
+X_RANGE = (-0.5, LAYOUT_WIDTH + 0.5)
 
 
 class GraphVisualizer:
@@ -55,13 +58,23 @@ class GraphVisualizer:
         scale = LAYOUT_WIDTH / sum(width.values())
         pos, left = {}, 0.0
         for eq in equipment:
-            w = width[eq] * scale
-            pos[eq] = (left + w / 2, 0)
-            for row, kind in ((1, 'actuator'), (2, 'sensor')):
-                devices = field[eq][kind]
-                for i, n in enumerate(devices):
-                    pos[n] = (left + (i + 0.5) * w / len(devices), row)
-            left += w
+            slots = width[eq]
+            sensors, actuators = field[eq]['sensor'], field[eq]['actuator']
+            pos[eq] = (left + slots * scale / 2, 0)
+            # Sensors sit in slot centres. Actuators sit on the gaps between sensors,
+            # so vertical edges through either row pass between nodes, not through them.
+            first = (slots - len(sensors)) / 2
+            for i, n in enumerate(sensors):
+                pos[n] = (left + (first + i + 0.5) * scale, 2)
+            gaps = len(sensors) - 1
+            if 0 < len(actuators) <= gaps:
+                picks = [first + 1 + round((j + 0.5) * gaps / len(actuators) - 0.5)
+                         for j in range(len(actuators))]
+            else:
+                picks = [(j + 0.5) * slots / len(actuators) for j in range(len(actuators))]
+            for n, p in zip(actuators, picks, strict=True):
+                pos[n] = (left + p * scale, 1)
+            left += slots * scale
 
         for layer in sorted(upper):
             row = layer + 2 + CONTROLLER_ROW_GAP
@@ -124,61 +137,33 @@ class GraphVisualizer:
         fig.tight_layout()
         return fig
 
-    @staticmethod
-    def curve(p0, p1):
-        """Quadratic curve from p0 to p1 that bends to the right of the travel direction.
-
-        Bending right means A->B and B->A curve to opposite sides, so a two way
-        link shows as two separate arrows instead of one line drawn twice.
-        Edges inside one row bend more so they pass around the nodes between them.
-        """
-        # Work in rough screen pixels so the bend looks the same in every direction
-        x0, y0 = p0[0] * PX_X, p0[1] * PX_Y
-        x1, y1 = p1[0] * PX_X, p1[1] * PX_Y
-        dx, dy = x1 - x0, y1 - y0
-        length = (dx * dx + dy * dy) ** 0.5
-        right = (dy / length, -dx / length)
-
-        peak = 30 + 0.08 * length if p0[1] == p1[1] else max(0.06 * length, 8)
-        cx = (x0 + x1) / 2 + right[0] * 2 * peak  # control point sits at twice the peak
-        cy = (y0 + y1) / 2 + right[1] * 2 * peak
-
-        xs, ys = [], []
-        for i in range(CURVE_POINTS):
-            t = i / (CURVE_POINTS - 1)
-            a, b, c = (1 - t) ** 2, 2 * (1 - t) * t, t ** 2
-            xs.append((a * x0 + b * cx + c * x1) / PX_X)
-            ys.append((a * y0 + b * cy + c * y1) / PX_Y)
-        return xs, ys
-
     def interactive_draw(self):
-        pos = self.layout()
+        node_xy, paths, plot_height = route_edges(self.G, self.layout(), PX_X)
         fig = go.Figure()
 
         # One trace per edge so the click script can recolor each edge on its own.
-        # The arrow marker sits in the middle and points along the curve.
+        # The arrow marker sits in the middle of the longest segment.
         # These traces never take hover or clicks; the hover traces below do that.
-        arrow_sizes = [0] * CURVE_POINTS
-        arrow_sizes[CURVE_POINTS // 2] = ARROW_SIZE
-        hover_points = {}  # rel -> (xs, ys, texts)
-        for source, target, data in self.G.edges(data=True):
-            xs, ys = self.curve(pos[source], pos[target])
+        hover_points = {}  # rel -> (xs, ys, texts, colors)
+        for (source, target, data), (pts, arrow_at) in zip(
+                self.G.edges(data=True), paths, strict=True):
+            sizes = [0] * len(pts)
+            sizes[arrow_at] = ARROW_SIZE
             fig.add_trace(go.Scatter(
-                x=xs, y=ys,
+                x=[p[0] for p in pts], y=[p[1] for p in pts],
                 mode="lines+markers",
                 line=dict(width=1, color=EDGE_COLOR),
-                marker=dict(symbol="arrow", size=arrow_sizes, angleref="previous",
-                            color=EDGE_COLOR),
+                marker=dict(symbol="arrow", size=sizes, angleref="previous", color=EDGE_COLOR),
                 hoverinfo="skip",
             ))
-            # Keep only the curve points that are clear of every node, so that
-            # near a node the node is the only thing that can be hovered or clicked
+            # Hover points every few pixels along the path, except near nodes, so
+            # that near a node the node is the only thing that can be hovered or clicked
             text = f"{source} → {target}<br>{data['rel']}: {data['reason']}"
             color = COLORS.get(self.G.nodes[source]['type'], CYBER_COLOR)  # tooltip = source color
             hx, hy, ht, hc = hover_points.setdefault(data['rel'], ([], [], [], []))
-            for x, y in zip(xs, ys, strict=True):
-                if all(((x - px) * PX_X) ** 2 + ((y - py) * PX_Y) ** 2 > NODE_HOVER_RADIUS ** 2
-                       for px, py in pos.values()):
+            for x, y in self._sample(pts):
+                if all(((x - nx_) * PX_X) ** 2 + (y - ny_) ** 2 > NODE_HOVER_RADIUS ** 2
+                       for nx_, ny_ in node_xy.values()):
                     hx.append(x)
                     hy.append(y)
                     ht.append(text)
@@ -196,12 +181,9 @@ class GraphVisualizer:
         # Nodes go last so they draw on top of the edges
         nodes = list(self.G.nodes(data=True))
         fig.add_trace(go.Scatter(
-            x=[pos[n][0] for n, _ in nodes],
-            y=[pos[n][1] for n, _ in nodes],
-            mode="markers+text",
-            text=[n for n, _ in nodes],
-            textposition="top center",
-            textfont=dict(size=10),
+            x=[node_xy[n][0] for n, _ in nodes],
+            y=[node_xy[n][1] for n, _ in nodes],
+            mode="markers",
             customdata=[n for n, _ in nodes],
             hovertext=[f"{d['name']} ({d['type']})" for _, d in nodes],
             hovertemplate="%{hovertext}<extra></extra>",
@@ -209,17 +191,38 @@ class GraphVisualizer:
                         line=dict(width=1, color="white")),
         ))
 
+        # Labels are annotations with a white background, so lines that pass
+        # behind a label stop at it instead of running through the text
+        for n, _ in nodes:
+            fig.add_annotation(
+                x=node_xy[n][0], y=node_xy[n][1], yshift=15, text=n, showarrow=False,
+                font=dict(size=9, color="#333"), bgcolor="rgba(255,255,255,0.9)", borderpad=1,
+            )
+
+        margin = dict(l=20, r=380, t=60, b=20)  # right margin leaves room for the info panel
         fig.update_layout(
             title="Platform asset graph (click a node for details)",
             showlegend=False,
             hovermode="closest",
             plot_bgcolor="white",
-            margin=dict(l=20, r=380, t=60, b=20),  # right margin leaves room for the info panel
-            xaxis=dict(visible=False),
-            yaxis=dict(visible=False, range=[-1.2, 11.6]),
-            height=900,
+            margin=margin,
+            xaxis=dict(visible=False, range=list(X_RANGE)),
+            # y is in pixels: the router sized every gap to fit its tracks
+            yaxis=dict(visible=False, range=[0, plot_height]),
+            height=round(plot_height) + margin["t"] + margin["b"],
         )
         return fig
+
+    @staticmethod
+    def _sample(pts, step_px=6):
+        """Points every step_px pixels along a polyline (x in layout units, y in px)."""
+        out = []
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:], strict=False):
+            length = ((x1 - x0) * PX_X) ** 2 + (y1 - y0) ** 2
+            k = max(int(length ** 0.5 // step_px), 1)
+            out.extend((x0 + (x1 - x0) * i / k, y0 + (y1 - y0) * i / k) for i in range(k))
+        out.append(pts[-1])
+        return out
 
     def _click_script(self):
         """JavaScript added to the HTML page: node selection, edge colors, info panel."""
