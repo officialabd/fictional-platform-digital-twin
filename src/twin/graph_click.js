@@ -22,6 +22,10 @@
     #filters .count { color: #888; }
     #filters .links { margin-top: 6px; font-size: 12px; }
     #filters .links a { color: #2a78d6; cursor: pointer; margin-right: 10px; }
+    #filters .ctl { margin-top: 6px; }
+    #filters .ctl label { width: auto; margin-right: 10px; }
+    #filters .ctl button { width: 24px; height: 22px; cursor: pointer; }
+    #filters .ctl .val { display: inline-block; min-width: 18px; text-align: center; font-weight: 600; }
     #info h2 { margin: 0 0 2px; font-size: 17px; }
     #info .id { color: #666; font-family: monospace; }
     #info .type { display: inline-block; margin: 6px 0; padding: 1px 8px; border-radius: 10px;
@@ -56,13 +60,19 @@
   const rels = Object.keys(relCounts).sort();
   filters.innerHTML = '<h3>Edge types</h3>' + rels.map(r =>
     `<label><input type="checkbox" value="${esc(r)}" checked> ${esc(r)} <span class="count">(${relCounts[r]})</span></label>`
-  ).join('') + '<div class="links"><a data-all="1">Show all</a><a data-all="0">Hide all</a></div>';
-  const boxes = [...filters.querySelectorAll('input')];
+  ).join('') + '<div class="links"><a data-all="1">Show all</a><a data-all="0">Hide all</a></div>' + `
+    <h3 style="margin-top:12px">Selection</h3>
+    <div class="ctl">Depth <button data-step="-1">&minus;</button><span class="val" id="depth-val">1</span><button data-step="1">+</button>
+      <span class="count" id="depth-max"></span></div>
+    <div class="ctl">Expand <label><input type="radio" name="dir" value="both" checked> Both</label><label><input type="radio" name="dir" value="out"> Outputs</label><label><input type="radio" name="dir" value="in"> Inputs</label></div>`;
+  const boxes = [...filters.querySelectorAll('input[type=checkbox]')];
+  const shownRels = () => new Set(boxes.filter(b => b.checked).map(b => b.value));
 
   function applyFilter() {
-    const shown = new Set(boxes.filter(b => b.checked).map(b => b.value));
+    const shown = shownRels();
     Plotly.restyle(gd, {visible: edges.map(e => shown.has(e[2]))}, edgeTraces);
     Plotly.restyle(gd, {visible: hoverTraces.map(i => shown.has(gd.data[i].name))}, hoverTraces);
+    if (selected) select(selected);  // the expansion only follows visible edge types
   }
   boxes.forEach(b => b.addEventListener('change', applyFilter));
   filters.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
@@ -76,7 +86,10 @@
       <p class="muted">Click a node to see what it is and how it connects. Click anywhere else to deselect.
       Arrows in the middle of each edge show its direction. Hover an edge for its reason.</p>
       <div><span class="swatch" style="background:${C.in}"></span>Incoming edge</div>
-      <div><span class="swatch" style="background:${C.out}"></span>Outgoing edge</div>`;
+      <div><span class="swatch" style="background:${C.out}"></span>Outgoing edge</div>
+      <p class="muted">Expand picks which edges to highlight: both, outputs only or inputs only.
+      Depth above 1 follows outputs of outputs and inputs of inputs through the edge types
+      that are ticked. Each extra step is drawn lighter.</p>`;
   }
 
   function facts(n) {
@@ -115,27 +128,102 @@
 
   // ---- selection ----
   function paint(colorOf, widthOf, nodeOpacity) {
-    const colors = edges.map(colorOf);
-    Plotly.restyle(gd, {'line.color': colors, 'marker.color': colors, 'line.width': edges.map(widthOf)}, edgeTraces);
+    const colors = edges.map((e, i) => colorOf(e, i));
+    const widths = edges.map((e, i) => widthOf(e, i));
+    Plotly.restyle(gd, {'line.color': colors, 'marker.color': colors, 'line.width': widths}, edgeTraces);
     Plotly.restyle(gd, {'marker.opacity': [nodeOpacity]}, [nodeTrace]);
   }
 
+  // ---- depth expansion ----
+  let selected = null;
+  let wanted = 1;   // depth the user asked for
+  let depth = 1;    // depth applied to the current node (wanted, capped at its max)
+  let dir = 'both'; // 'both', 'out' (outputs only) or 'in' (inputs only), from depth 1 up
+  const depthVal = filters.querySelector('#depth-val');
+  const depthMax = filters.querySelector('#depth-max');
+
+  // Breadth first walk along visible edges. forward = follow arrows (outputs).
+  // Every edge leaving a node reached at step k-1 is drawn at step k, even when
+  // it points back to a node already reached (so loops stay visible).
+  // Returns {levels: Map(edge index -> step), nodes: Set, steps: last step with edges}.
+  function walk(id, forward, limit, shown) {
+    const levels = new Map();
+    const seen = new Set([id]);
+    let frontier = new Set([id]);
+    let steps = 0;
+    for (let k = 1; k <= limit && frontier.size; k++) {
+      const next = new Set();
+      edges.forEach((e, i) => {
+        if (!shown.has(e[2])) return;
+        const from = forward ? e[0] : e[1];
+        const to = forward ? e[1] : e[0];
+        if (!frontier.has(from)) return;
+        if (!levels.has(i)) levels.set(i, k);
+        steps = k;
+        if (!seen.has(to)) { seen.add(to); next.add(to); }
+      });
+      frontier = next;
+    }
+    return {levels, nodes: seen, steps};
+  }
+
+  // Lighter color for further steps: mix the base color towards white
+  function lighter(hex, step) {
+    // step 1: full color, step 2: 50% towards white, then +10% per step, capped at 80%
+    const t = step <= 1 ? 0 : Math.min(0.8, 0.5 + 0.1 * (step - 2));
+    const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+    return 'rgb(' + c.map(v => Math.round(v + (255 - v) * t)).join(',') + ')';
+  }
+
+  function updateDepthLabel(max) {
+    depthVal.textContent = depth;
+    depthMax.textContent = max ? `(max ${max})` : '';
+  }
+
   function select(id) {
-    const incoming = edges.filter(e => e[1] === id);
-    const outgoing = edges.filter(e => e[0] === id);
-    const keep = new Set([id, ...incoming.map(e => e[0]), ...outgoing.map(e => e[1])]);
+    selected = id;
+    const shown = shownRels();
+    const useOut = dir !== 'in';
+    const useIn = dir !== 'out';
+    // Deepest useful depth for this node in the chosen direction(s)
+    const max = Math.max(1, walk(id, true, useOut ? Infinity : 0, shown).steps,
+                         walk(id, false, useIn ? Infinity : 0, shown).steps);
+    depth = Math.min(wanted, max);
+    updateDepthLabel(max);
+
+    const down = walk(id, true, useOut ? depth : 0, shown);
+    const up = walk(id, false, useIn ? depth : 0, shown);
+    // An edge reached both ways keeps the nearer step; ties count as output
+    const style = edges.map((_, i) => {
+      const o = down.levels.get(i), n = up.levels.get(i);
+      if (o === undefined && n === undefined) return null;
+      if (n === undefined || (o !== undefined && o <= n)) return {color: lighter(C.out, o), step: o};
+      return {color: lighter(C.in, n), step: n};
+    });
+    const keep = new Set([...down.nodes, ...up.nodes]);
     paint(
-      e => e[1] === id ? C.in : e[0] === id ? C.out : C.faded,
-      e => (e[0] === id || e[1] === id) ? 2.5 : 1,
+      (_, i) => style[i] ? style[i].color : C.faded,
+      (_, i) => style[i] ? Math.max(1.2, 2.5 - 0.4 * (style[i].step - 1)) : 1,
       nodeIds.map(n => keep.has(n) ? 1 : 0.2),
     );
-    showNode(id, incoming, outgoing);
+    showNode(id, edges.filter(e => e[1] === id), edges.filter(e => e[0] === id));
   }
 
   function deselect() {
+    selected = null;
+    updateDepthLabel(0);
     paint(() => C.edge, () => 1, nodeIds.map(() => 1));
     showHelp();
   }
+
+  filters.querySelectorAll('button[data-step]').forEach(b => b.addEventListener('click', () => {
+    wanted = Math.max(1, (selected ? depth : wanted) + Number(b.dataset.step));
+    if (selected) select(selected); else { depth = wanted; updateDepthLabel(0); }
+  }));
+  filters.querySelectorAll('input[name=dir]').forEach(r => r.addEventListener('change', () => {
+    dir = r.value;
+    if (selected) select(selected);
+  }));
 
   // plotly_click fires only on data points. A DOM click that did not hit a node
   // (and was not the end of a pan or zoom drag) means "clicked somewhere else".
