@@ -1,9 +1,5 @@
 # Project context
 Internship project: a digital twin of a fictional offshore oil and gas platform.
-Core question: if part of the platform is attacked or fails, what else breaks, and what should the operator do?
-Python. Current phase: Week 5 (Oct 26 to 30), the telemetry simulator.
-Plan: W6 impact analysis + mid-term demo, W7 scenarios, W8 Streamlit dashboard, W9 LLM advisor, W10 validation, W11 demo, W12 exit report.
-Reference docs (in docs/): "Fictional Platform" (equipment, 29 sensors with normal ranges, 8 actuators, SIS trips, Purdue levels) and "Digital Twin Architecture v1".
 
 # Architecture
 Two programs in one repo. Data flows one way: simulator to twin.
