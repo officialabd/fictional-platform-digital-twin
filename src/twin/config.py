@@ -39,7 +39,8 @@ STALE_S = 5.0  # wall seconds without a new reading before a tag counts as stale
 RANGE_PERSIST_S = 10
 PHYSICS_PERSIST_S = 30
 FROZEN_READINGS = 30  # a noisy sensor repeating the exact same value this many times
-JUMP_FRACTION = 0.5  # change in one second, as a fraction of the normal range width
+JUMP_FRACTION = 1.0  # change in one second, as a fraction of the normal range width.
+# Normal operation reaches 0.5 (FT501, export pump loop), so 1.0 leaves a 2x margin.
 JUMP_HOLD_S = 30  # how long a jump flag stays up
 CLEAR_HOLD_S = 60  # a flag clears only after its check has been false this long
 NEAR_TRIP_FRACTION = 0.9

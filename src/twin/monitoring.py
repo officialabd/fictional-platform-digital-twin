@@ -173,7 +173,7 @@ class Monitor:
             if step > config.JUMP_FRACTION * width:
                 self.jump_until[tag] = ts + config.JUMP_HOLD_S
         if self.jump_until.get(tag, -1) >= ts:
-            return [Finding(tag, "jump", "warning", "jumped more than half its normal range "
+            return [Finding(tag, "jump", "warning", "jumped more than its whole normal range "
                             "in one second")]
         return []
 

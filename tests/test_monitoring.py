@@ -100,3 +100,12 @@ def test_frozen_sensor_is_flagged(G):
     for t in range(40):
         events += monitor.feed(Reading("PT201", float(t), 20.0), received_at=float(t))
     assert first(events, "flag_open", "PT201", "frozen") is not None
+
+
+def test_normal_pump_loop_swing_is_not_a_jump(G):
+    # Seen live: FT501 stepped 5.05 m3/h (half its normal range) in normal operation
+    monitor = Monitor(G)
+    events = []
+    for t, v in enumerate([61.852, 56.802] * 3):
+        events += monitor.feed(Reading("FT501", float(t), v), received_at=float(t))
+    assert first(events, "flag_open", "FT501", "jump") is None
