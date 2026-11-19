@@ -48,3 +48,8 @@ def test_only_mqtt_link_knows_about_mqtt():
 def test_twin_does_not_touch_the_truth_log():
     for path in python_files("twin"):
         assert "truth.db" not in path.read_text(encoding="utf-8"), path
+
+
+def test_twin_only_reads_its_own_database():
+    for path in python_files("twin"):
+        assert "sim.db" not in path.read_text(encoding="utf-8"), path
