@@ -34,6 +34,9 @@ TRIP_TARGETS = {
 # Data sync
 TICK_S = 1.0  # the platform historian stores one reading per tag per second
 STALE_S = 5.0  # wall seconds without a new reading before a tag counts as stale
+PACE_SAMPLES = 15  # wall steps (about 1 s each) used to measure the live data pace
+PACE_MIN_S = 1.0  # need at least this much wall time to measure the pace
+CATCH_UP_MARGIN_S = 1.5  # wall seconds behind live that still count as caught up
 
 # Monitoring. Persistence is in simulated seconds: a check must hold this long to raise a flag.
 RANGE_PERSIST_S = 10

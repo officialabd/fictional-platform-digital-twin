@@ -108,6 +108,9 @@ class TwinStore:
             "VALUES (?, ?, ?, ?, ?, ?)", (node, check, severity, detail, ts, wall))
         return cur.lastrowid
 
+    def update_flag(self, flag_id: int, detail: str) -> None:
+        self.db.execute("UPDATE flags SET detail = ? WHERE id = ?", (detail, flag_id))
+
     def close_flag(self, flag_id: int, ts, wall) -> None:
         self.db.execute("UPDATE flags SET cleared_ts = ?, cleared_wall = ? WHERE id = ?",
                         (ts, wall, flag_id))

@@ -38,6 +38,8 @@ class Recorder:
                 self.flag_ids[(e.node, e.check)] = self.store.open_flag(
                     e.node, e.check, e.severity, e.detail, e.ts, wall)
                 log.info("t=%s flag %s %s: %s", e.ts, e.node, e.check, e.detail)
+            elif e.kind == "flag_update":
+                self.store.update_flag(self.flag_ids[(e.node, e.check)], e.detail)
             elif e.kind == "flag_close":
                 self.store.close_flag(self.flag_ids.pop((e.node, e.check)), e.ts, wall)
             elif e.kind == "hyp_open":

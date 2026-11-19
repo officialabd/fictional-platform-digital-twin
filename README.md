@@ -63,6 +63,12 @@ streamlit run src/twin/dashboard/app.py
 ```
 
 Use the same `--run-id` for the twin and the simulator, so Week 10 validation can pair them.
+At `--speed 20` a 900 s run lasts 45 s, so open the dashboard before starting the simulator,
+or use a lower speed, to watch it live.
+
+After a link loss the backlog arrives in order but slower than real time. The twin estimates
+how far behind live it is (from the data pace before the outage) and shows a "catching up"
+warning until it is current.
 The twin writes `runs/twin/<run-id>/twin.db`: every reading it received (duplicates dropped),
 plus the flags and suspected failures from monitoring. It never opens `sim.db` or `truth.db`.
 

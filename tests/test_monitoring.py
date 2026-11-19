@@ -109,3 +109,26 @@ def test_normal_pump_loop_swing_is_not_a_jump(G):
     for t, v in enumerate([61.852, 56.802] * 3):
         events += monitor.feed(Reading("FT501", float(t), v), received_at=float(t))
     assert first(events, "flag_open", "FT501", "jump") is None
+
+
+def test_backfill_shows_how_far_behind_live_the_twin_is(G):
+    """Seen live: after the link returns, the backlog arrives in order but slower than real
+    time, so nothing looks missing while the data is minutes old."""
+    monitor, events = Monitor(G), []
+    generated = 0  # simulated seconds the platform has produced so far
+    sent = 0  # simulated seconds the twin has received
+    for wall in range(40):
+        generated += 20  # the simulator runs at 20x
+        link_up = not 10 <= wall < 15
+        if link_up:
+            # Live pace is 20 per wall second. A backlog drains at 40 per wall second.
+            for _ in range(min(40, generated - sent)):
+                events += monitor.feed(Reading("PT201", float(sent), 20.0 + sent % 3 * 0.01),
+                                       received_at=float(wall))
+                sent += 1
+        events += monitor.wall_step(wall + 0.5)
+    opened = first(events, "flag_open", "Satellite_Link", "catching_up")
+    closed = first(events, "flag_close", "Satellite_Link", "catching_up")
+    assert opened is not None and closed is not None
+    updates = [e.detail for e in events if e.kind == "flag_update" and e.check == "catching_up"]
+    assert updates and "behind live" in updates[0]

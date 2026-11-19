@@ -74,9 +74,12 @@ def header(snap: Snapshot) -> None:
     cols[3].metric("Warnings", sum(f["severity"] == "warning" for f in snap.flags))
     cols[4].metric("Suspected failures", len(snap.hypotheses))
     missing = sum(snap.gaps.values())
+    catching_up = [f for f in snap.flags if f["check_name"] == "catching_up"]
     if snap.link == "lost":
         st.error(f"No data for {age:.0f} s. Values below are the last received. "
                  "No data does not mean the platform stopped.")
+    elif catching_up:
+        st.warning(catching_up[0]["detail"])
     elif missing:
         st.warning(f"{missing} readings still missing. The twin is filling the gap.")
     elif snap.link == "none":

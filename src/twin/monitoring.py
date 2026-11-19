@@ -76,6 +76,9 @@ class Monitor:
         self.hyps: dict[tuple[str, Mode], _Hyp] = {}
         self.missing: dict[tuple[str, str], float] = {}  # key -> ts its check stopped holding
         self.wall_keys: set[tuple[str, str]] = set()
+        # (wall, ts) samples while data flows live, to measure the pace
+        self.pace: deque[tuple[float, float]] = deque(maxlen=config.PACE_SAMPLES)
+        self.anchor: tuple[float, float, float] | None = None  # (wall, ts, rate) at outage
 
     # Input
 
@@ -95,10 +98,47 @@ class Monitor:
         return events
 
     def wall_step(self, now: float) -> list[Event]:
-        """Stale checks. Call about once a second."""
-        self.wall_findings = {f.key: f for f in self._stale_checks(now)}
+        """Stale and catch-up checks. Call about once a second."""
+        findings = self._stale_checks(now)
+        outage = any(f.check == "no_data" for f in findings)
+        findings += self._catch_up(now, outage)
+        self.wall_findings = {f.key: f for f in findings}
         self.wall_keys |= set(self.wall_findings)
         return self._update(self.ts)
+
+    def _catch_up(self, now: float, outage: bool) -> list[Finding]:
+        """After an outage the backlog arrives in order, so nothing looks missing, but the data
+        can be minutes old. Estimate how far behind live the twin is, from the pace data
+        arrived at before the outage: simulated seconds per wall second."""
+        if self.ts is None:
+            return []
+        if outage:
+            if self.anchor is None:
+                rate = self._pace_rate()
+                if rate:
+                    self.anchor = (max(self.received_at.values()), self.ts, rate)
+            return []
+        if self.anchor is None:
+            # Sample only when ts moved on, timed by when that reading arrived. The seconds
+            # before an outage is confirmed have a frozen ts and would make the pace look slow.
+            if not self.pace or self.ts > self.pace[-1][1]:
+                self.pace.append((max(self.received_at.values()), self.ts))
+            return []
+        wall_a, ts_a, rate = self.anchor
+        behind = ts_a + (now - wall_a) * rate - self.ts
+        if behind > config.CATCH_UP_MARGIN_S * rate:
+            return [Finding(config.SATELLITE_LINK, "catching_up", "warning",
+                            f"backfilling after an outage, about {behind:.0f} s behind live. "
+                            "Do not trust current values until this clears")]
+        self.anchor = None
+        self.pace.clear()  # the backfill pace is not the live pace
+        return []
+
+    def _pace_rate(self) -> float | None:
+        if len(self.pace) < 2:
+            return None
+        (w0, t0), (w1, t1) = self.pace[0], self.pace[-1]
+        return (t1 - t0) / (w1 - w0) if w1 - w0 >= config.PACE_MIN_S and t1 > t0 else None
 
     # Helpers for the checks
 
@@ -313,6 +353,9 @@ class Monitor:
                 self.flags[key] = f
                 events.append(Event("flag_open", f.node, ts, f.check, f.severity, f.detail))
             elif key in self.flags:
+                if key in self.wall_keys and f.detail != self.flags[key].detail:
+                    events.append(Event("flag_update", f.node, ts, f.check, f.severity,
+                                        f.detail))
                 self.flags[key] = f  # keep the detail current
         for key in list(self.pending):
             if key not in current:
