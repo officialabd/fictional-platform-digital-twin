@@ -30,13 +30,6 @@ Twin, six parts: data sync, graph model (exists), monitoring, impact analysis, d
 - The simulator has its own config (setpoints, trip limits, initial state, noise) and does not read data/nodes.csv. The only thing shared is tag names.
 - Synthetic data only. No company material in the repo. Secrets in .env, which is gitignored.
 
-# Current state
-Branch phase-2-simulator:
-- src/simulator: config, process, sensors, control, faults, scenarios, plant, storage, forwarder, mqtt_link, main. Run: python -m simulator.main (needs pip install -e .). Details in README.md and docs/simulator_parameters.md.
-- src/shared/messages.py: reading format and topic. The decoder and subscription topic get added with the twin's data sync.
-- src/twin: the graph model only. Run from repo root: python -m twin.main (needs the Neo4j server).
-- data/nodes.csv: 59 assets. data/edges.csv: 125 typed relationships. NetworkX is the source of truth; Neo4j is optional.
-
 # Target layout
 data/, src/simulator/, src/twin/ (existing code moves here), src/shared/, runs/ (gitignored output), tests/, docs/
 
@@ -44,11 +37,6 @@ data/, src/simulator/, src/twin/ (existing code moves here), src/shared/, runs/ 
 1. Impact rule per edge type: which way damage spreads (arrows follow meaning, not damage).
 2. Impacts outside the graph, e.g. precautionary shutdown after loss of visibility.
 3. Which LLM for the advisor, and whether an external API is acceptable.
-4. How much history the twin stores.
-
-# Next steps
-1. Twin data sync: subscribe to the broker, ignore duplicates, keep latest value, timestamp and quality.
-2. Week 6: impact analysis and mid-term demo.
 
 # How to work with me
 - Concise, direct, no fluff. No em dashes.
@@ -56,4 +44,4 @@ data/, src/simulator/, src/twin/ (existing code moves here), src/shared/, runs/ 
 - I'm new to digital twins. Go step by step, let me make the design decisions, and check my reasoning rather than handing me finished designs.
 
 # Context:
-- Google Drive Docs: https://drive.google.com/drive/folders/1Ob_8oZLKPuQn_lzhuSqDEze8E8XIVf_l
+- Google Drive Docs/Files/Folders/Sub-folders: https://drive.google.com/drive/folders/1Ob_8oZLKPuQn_lzhuSqDEze8E8XIVf_l
