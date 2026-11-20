@@ -10,7 +10,7 @@ from pathlib import Path
 
 from shared.messages import Reading
 
-RUNS_DIR = Path(__file__).resolve().parents[2] / "runs" / "twin"
+RUNS_DIR = Path(__file__).resolve().parents[2] / "runs"
 DB_NAME = "twin.db"
 
 SCHEMA = """

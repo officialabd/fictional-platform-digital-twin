@@ -4,6 +4,7 @@ from pathlib import Path
 
 import networkx as nx
 
+
 class GraphError(ValueError):
     def __init__(self, errors):
         self.errors = errors

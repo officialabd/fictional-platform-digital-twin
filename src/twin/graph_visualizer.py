@@ -255,7 +255,7 @@ class GraphVisualizer:
         # plotly replaces {plot_id} with the div id of the figure
         return "const META = " + json.dumps(meta) + ";\n" + script
 
-    def save_html(self, path="runs/asset_graph.html"):
+    def save_html(self, path="outputs/asset_graph.html"):
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         fig = self.interactive_draw()
@@ -263,7 +263,7 @@ class GraphVisualizer:
                        config={"displaylogo": False, "responsive": True})
         return path
 
-    def show_interactive(self, path="runs/asset_graph.html"):
+    def show_interactive(self, path="outputs/asset_graph.html"):
         path = self.save_html(path)
         webbrowser.open(path.resolve().as_uri())
         return path

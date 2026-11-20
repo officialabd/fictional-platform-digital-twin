@@ -53,3 +53,8 @@ def test_twin_does_not_touch_the_truth_log():
 def test_twin_only_reads_its_own_database():
     for path in python_files("twin"):
         assert "sim.db" not in path.read_text(encoding="utf-8"), path
+
+
+def test_launcher_runs_both_sides_without_importing_them():
+    launcher = SRC.parent / "scripts" / "run.py"
+    assert not imported_packages(launcher) & {"simulator", "twin", "shared"}

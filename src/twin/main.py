@@ -13,7 +13,7 @@ load_dotenv()
 G = load_graph()
 
 visualizer = GraphVisualizer(G)
-visualizer.show_interactive()  # writes runs/asset_graph.html and opens it in the browser
+visualizer.show_interactive()  # writes outputs/asset_graph.html and opens it in the browser
 
 # from twin.load_neo4j import Neo4jLoader
 # with Neo4jLoader() as loader:

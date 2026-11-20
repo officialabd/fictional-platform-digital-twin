@@ -1,8 +1,12 @@
 """The twin service: data sync and monitoring, writing everything to twin.db.
 
-Start it before the simulator, with the same run id:
-    python -m twin.service --run-id demo2
-    python -m simulator.main --run-id demo2 --scenario spoof_pt201 --speed 20 --duration 900
+Usually started by scripts/run.py, which gives the twin and the simulator the same run id.
+By hand, start it before the simulator:
+    python -m twin.service --run-id demo
+    python -m simulator.main --run-id demo --scenario spoof_pt201 --speed 20 --duration 900
+
+twin.db is created only once the broker confirms the subscription, so a launcher can wait for
+the file before it starts the simulator.
 """
 
 import argparse
@@ -21,6 +25,7 @@ log = logging.getLogger("twin")
 
 LOOP_S = 0.2
 WALL_STEP_S = 1.0
+SUBSCRIBE_TIMEOUT_S = 10.0
 
 
 class Recorder:
@@ -87,8 +92,12 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
 
     G = load_graph()
-    store = TwinStore(path)
     sub = Subscriber(args.broker_host, args.broker_port, client_id=f"twin-{args.run_id}")
+    if not sub.subscribed.wait(SUBSCRIBE_TIMEOUT_S):
+        sub.close()
+        raise SystemExit(f"no broker at {args.broker_host}:{args.broker_port}. "
+                         "Is it running? docker compose up -d")
+    store = TwinStore(path)
     log.info("twin for run %s, writing %s", args.run_id, path)
     try:
         run(sub, store, Monitor(G), Recorder(G, store))

@@ -44,8 +44,8 @@ G = graph()
 st.sidebar.title("Platform twin")
 run_ids = runs()
 if not run_ids:
-    st.info("No twin runs yet. Start the twin service first: "
-            "`python -m twin.service --run-id <id>`")
+    st.info("No twin runs yet. Start one: "
+            "`python scripts/run.py --scenario spoof_pt201 --speed 20 --duration 900`")
     st.stop()
 run_id = st.sidebar.selectbox("Run", run_ids)
 auto = st.sidebar.toggle("Live refresh (1 s)", value=True)

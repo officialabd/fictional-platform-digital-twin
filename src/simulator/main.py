@@ -65,10 +65,11 @@ def main() -> None:
 
     if args.speed <= 0:
         parser.error("--speed must be above 0")
+    # The twin may have created the folder first, for its own twin.db
     run_dir = RUNS_DIR / args.run_id
-    if run_dir.exists():
+    if (run_dir / "sim.db").exists():
         parser.error(f"run {args.run_id} already exists, choose another --run-id")
-    run_dir.mkdir(parents=True)
+    run_dir.mkdir(parents=True, exist_ok=True)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
     log.info(

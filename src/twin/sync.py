@@ -6,6 +6,7 @@ the service thread, so nothing is shared but the queue.
 
 import logging
 import queue
+import threading
 import time
 
 import paho.mqtt.client as mqtt
@@ -28,12 +29,14 @@ class Subscriber:
     def __init__(self, host: str, port: int, client_id: str) -> None:
         self.inbox: queue.Queue[tuple[Reading, float]] = queue.Queue()
         self.connected = False
+        self.subscribed = threading.Event()  # set once the broker confirms the subscription
         # Clean session: the twin only gets readings published after it connects,
         # so start it before the simulator
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
         self.client.on_message = self._on_message
+        self.client.on_subscribe = self._on_subscribe
         self.client.connect_async(host, port)
         self.client.loop_start()
 
@@ -47,6 +50,10 @@ class Subscriber:
     def _on_disconnect(self, client, userdata, flags, reason_code, properties) -> None:
         self.connected = False
         log.warning("broker disconnected: %s", reason_code)
+
+    def _on_subscribe(self, client, userdata, mid, reason_codes, properties) -> None:
+        if not any(code.is_failure for code in reason_codes):
+            self.subscribed.set()
 
     def _on_message(self, client, userdata, message) -> None:
         reading = parse(message.payload)
