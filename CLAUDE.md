@@ -16,7 +16,8 @@ Transport (decided): MQTT via a Mosquitto broker, paho-mqtt 2.x.
 - Topic per tag: platform/<TAG>. Payload: JSON {tag, ts, value}. ts is simulated seconds. A resend can duplicate, so the twin must ignore duplicates.
 Keep on purpose: PT201 feeds both DCS and SIS (Week 7 spoofing scenario). Instrument air below 4.5 barg sends every pneumatic valve to its fail position.
 
-Twin, six parts: data sync, graph model (exists), monitoring, impact analysis, dashboard (Streamlit), advisor (LLM).
+Twin, six parts: data sync, graph model, monitoring, impact analysis, dashboard (Streamlit), advisor (LLM). All built except the advisor.
+scripts/run.py starts the twin and the simulator under one date-time run id. Each run writes runs/<run-id>/ (sim.db, truth.db, twin.db).
 
 # Hard rules
 - src/simulator and src/twin never import each other. src/shared holds only the message format.
@@ -27,12 +28,12 @@ Twin, six parts: data sync, graph model (exists), monitoring, impact analysis, d
 - Synthetic data only. No company material in the repo. Secrets in .env, which is gitignored.
 
 # Target layout
-data/, src/simulator/, src/twin/ (existing code moves here), src/shared/, runs/ (gitignored output), tests/, docs/
+data/, src/simulator/, src/twin/, src/shared/, scripts/, runs/ and outputs/ (gitignored output), tests/, docs/ (gitignored)
 
 # Open questions
-1. Impact rule per edge type: which way damage spreads (arrows follow meaning, not damage).
-2. Impacts outside the graph, e.g. precautionary shutdown after loss of visibility.
-3. Which LLM for the advisor, and whether an external API is acceptable.
+(Answered: which way damage spreads per edge type, see Rules 1 to 13 in src/twin/impact.py.)
+1. Impacts outside the graph, e.g. precautionary shutdown after loss of visibility.
+2. Which LLM for the advisor, and whether an external API is acceptable.
 
 # How to work with me
 - Concise, direct, no fluff. No em dashes.

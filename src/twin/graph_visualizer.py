@@ -119,16 +119,22 @@ class GraphVisualizer:
                 others.append((source, target))
                 others_colors.append(COLORS.get(self.G.nodes[source]['type'], CYBER_COLOR))
 
-        nx.draw_networkx_edges(self.G, pos, edgelist=network, ax=ax, node_size=NODE_SIZE, arrowsize=15, edge_color=network_colors)
-        nx.draw_networkx_edges(self.G, pos, edgelist=others, ax=ax, node_size=NODE_SIZE, arrowsize=15, edge_color=others_colors, style='dashed')
+        nx.draw_networkx_edges(self.G, pos, edgelist=network, ax=ax, node_size=NODE_SIZE,
+                               arrowsize=15, edge_color=network_colors)
+        nx.draw_networkx_edges(self.G, pos, edgelist=others, ax=ax, node_size=NODE_SIZE,
+                               arrowsize=15, edge_color=others_colors, style='dashed')
 
         labels = {n: n.replace('_', '\n') for n in self.G.nodes}
         nx.draw_networkx_labels(self.G, pos, ax=ax, font_size=7, font_color='black', labels=labels)
 
+        def dot(color, label):
+            return Line2D([], [], marker='o', color='none', markerfacecolor=color,
+                          markersize=10, label=label)
+
         legend = [
-            Line2D([], [], marker='o', color='none', markerfacecolor='#2a78d6', markersize=10, label='Equipment'),
-            Line2D([], [], marker='o', color='none', markerfacecolor='#eb6834', markersize=10, label='Sensors and actuators'),
-            Line2D([], [], marker='o', color='none', markerfacecolor=CYBER_COLOR, markersize=10, label='Cyber systems')
+            dot('#2a78d6', 'Equipment'),
+            dot('#eb6834', 'Sensors and actuators'),
+            dot(CYBER_COLOR, 'Cyber systems'),
         ]
 
         ax.legend(handles=legend, loc='upper right')
@@ -137,7 +143,13 @@ class GraphVisualizer:
         fig.tight_layout()
         return fig
 
-    def interactive_draw(self):
+    def interactive_draw(self, node_colors=None, rings=None, title=None, panel=True):
+        """Plotly figure of the graph.
+
+        node_colors: node -> fill color, replaces the type colors (the dashboard uses status).
+        rings: node -> outline color, to highlight nodes (the dashboard uses impact).
+        panel: leave room on the right for the HTML page's info panel.
+        """
         node_xy, paths, plot_height = route_edges(self.G, self.layout(), PX_X)
         fig = go.Figure()
 
@@ -180,6 +192,8 @@ class GraphVisualizer:
 
         # Nodes go last so they draw on top of the edges
         nodes = list(self.G.nodes(data=True))
+        node_colors = node_colors or {}
+        rings = rings or {}
         fig.add_trace(go.Scatter(
             x=[node_xy[n][0] for n, _ in nodes],
             y=[node_xy[n][1] for n, _ in nodes],
@@ -187,8 +201,12 @@ class GraphVisualizer:
             customdata=[n for n, _ in nodes],
             hovertext=[f"{d['name']} ({d['type']})" for _, d in nodes],
             hovertemplate="%{hovertext}<extra></extra>",
-            marker=dict(size=18, color=[COLORS.get(d['type'], CYBER_COLOR) for _, d in nodes],
-                        line=dict(width=1, color="white")),
+            marker=dict(
+                size=18,
+                color=[node_colors.get(n, COLORS.get(d['type'], CYBER_COLOR)) for n, d in nodes],
+                line=dict(width=[4 if n in rings else 1 for n, _ in nodes],
+                          color=[rings.get(n, "white") for n, _ in nodes]),
+            ),
         ))
 
         # Labels are annotations with a white background, so lines that pass
@@ -199,9 +217,10 @@ class GraphVisualizer:
                 font=dict(size=9, color="#333"), bgcolor="rgba(255,255,255,0.9)", borderpad=1,
             )
 
-        margin = dict(l=20, r=380, t=60, b=20)  # right margin leaves room for the info panel
+        # right margin leaves room for the info panel of the HTML page
+        margin = dict(l=20, r=380 if panel else 20, t=60, b=20)
         fig.update_layout(
-            title="Platform asset graph (click a node for details)",
+            title=title or "Platform asset graph (click a node for details)",
             showlegend=False,
             hovermode="closest",
             plot_bgcolor="white",
@@ -236,7 +255,7 @@ class GraphVisualizer:
         # plotly replaces {plot_id} with the div id of the figure
         return "const META = " + json.dumps(meta) + ";\n" + script
 
-    def save_html(self, path="runs/asset_graph.html"):
+    def save_html(self, path="outputs/asset_graph.html"):
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         fig = self.interactive_draw()
@@ -244,7 +263,7 @@ class GraphVisualizer:
                        config={"displaylogo": False, "responsive": True})
         return path
 
-    def show_interactive(self, path="runs/asset_graph.html"):
+    def show_interactive(self, path="outputs/asset_graph.html"):
         path = self.save_html(path)
         webbrowser.open(path.resolve().as_uri())
         return path

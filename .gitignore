@@ -8,7 +8,7 @@ __pycache__/
 # Virtual environment
 .venv/
 
-# Generated files
+# Generated files (runs/<run-id>/, outputs/asset_graph.html)
 outputs/
 runs/
 *.db

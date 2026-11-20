@@ -20,3 +20,15 @@ def topic(tag: str) -> str:
 
 def encode(reading: Reading) -> bytes:
     return json.dumps(asdict(reading)).encode()
+
+
+SUBSCRIPTION = TOPIC_PREFIX + "#"
+
+
+def decode(payload: bytes) -> Reading:
+    """Raises ValueError on anything that is not a well formed reading."""
+    try:
+        data = json.loads(payload)
+        return Reading(str(data["tag"]), float(data["ts"]), float(data["value"]))
+    except (KeyError, TypeError, json.JSONDecodeError) as error:
+        raise ValueError(f"bad reading: {payload[:80]!r}") from error
